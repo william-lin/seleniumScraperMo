@@ -1,8 +1,8 @@
 from selenium import webdriver
+from scraperMoConstants import CHROME_DRIVER_FILE
 from time import sleep
 import os
 
-CHROME_DRIVER_FILE = "chromedriver"
 
 class BasicBrowser():
     ''' Basic class that wraps most common methods of the selenium driver.
@@ -18,13 +18,11 @@ class BasicBrowser():
     def _driver_launch(self, chromePath):
         driver = None
         if not chromePath:
-            path = os.path.join(os.getcwd(), CHROME_DRIVER_FILE)
-        else:
-            driver = webdriver.Chrome(os.path.join(chromePath))
+            chromePath = os.path.join(os.getcwd(), CHROME_DRIVER_FILE)
+        driver = webdriver.Chrome(os.path.join(chromePath))
         if driver:
             return driver
-        else:
-            raise Exception # Need to define custom exception
+
         
     def delay(self, message='Hit "Return" to continue...'):
         while 1:
@@ -56,3 +54,9 @@ class BasicBrowser():
         self.driver.refresh()
         sleep(sleep_time)
 
+
+
+if __name__ == '__main__':
+    browser = BasicBrowser("http://google.com")
+    browser.refresh(sleep_time=1)
+    
