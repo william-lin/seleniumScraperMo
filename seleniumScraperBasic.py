@@ -9,19 +9,22 @@ class BasicBrowser():
     '''
 
     def __init__(self, url="about:blank", chromePath=None, delay=False):
+        if not chromePath:
+            from os import getcwd, path
+            chromePath = path.join(getcwd(), CHROME_DRIVER_FILE)        
         self.driver = self._driver_launch(chromePath)
         self.driver.get(url)
         if delay:
             self.delay()
         self.home_tab = self.driver.window_handles[0] #This is the tab you opened with.
+        
 
     def _driver_launch(self, chromePath):
-        driver = None
-        if not chromePath:
-            chromePath = os.path.join(os.getcwd(), CHROME_DRIVER_FILE)
-        driver = webdriver.Chrome(os.path.join(chromePath))
+        driver = webdriver.Chrome(chromePath)
         if driver:
             return driver
+        else:
+            raise BadChromePathException
 
         
     def delay(self, message='Hit "Return" to continue...'):
@@ -54,6 +57,9 @@ class BasicBrowser():
         self.driver.refresh()
         sleep(sleep_time)
 
+        
+class BadChromePathException(Exception):
+    pass
 
 
 if __name__ == '__main__':
