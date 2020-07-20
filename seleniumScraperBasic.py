@@ -17,7 +17,7 @@ class BasicBrowser():
             chromePath = os.path.join(os.getcwd(), CHROME_DRIVER_FILE)        
         self.driver = self._driver_launch(chromePath)
         self.driver.get(url)
-        if _delay:
+        if delay:
             self._delay()
         self.home_tab = self.driver.window_handles[0] #This is the tab you opened with.
         
