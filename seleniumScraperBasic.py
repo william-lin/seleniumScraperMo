@@ -44,15 +44,10 @@ class BasicBrowser():
         self.driver.forward()
         sleep(sleep_time)
         
-        
     def get_source(self, elem=None):
         if elem:
             return elem.get_attribute('innerHTML')
         return self.driver.page_source
-    
-    def get_soup(self, elem=None):
-        if elem:
-            return 
 
     def get_url(self):
         return self.driver.current_url    
@@ -60,3 +55,4 @@ class BasicBrowser():
     def refresh(self, sleep_time=0):
         self.driver.refresh()
         sleep(sleep_time)
+
