@@ -9,9 +9,8 @@ from selenium.common.exceptions import *
 
 
 class Browser(BasicBrowser):
-    ''' Using the BasicBrowser to further enhance the browser, including tab management.
+    ''' Using the BasicBrowser to further enhance the browser, including finding element and tab management.
     ''' 
-    
     
     def get_links(self, elem=None):
         ''' Return a list of urls that appear as links in the node'''
@@ -70,7 +69,7 @@ class Browser(BasicBrowser):
     
     def _act(self, elem_identifier, mode, timeout=3, retry=3, refresh=0, click=False, send_keys=""):
         '''
-        Sleepless helper function
+        Sleepless helper function for self.act() where the action really takes place.
         '''
         if mode == 'SELECTOR':
             mode = 'CSS_SELECTOR' #shorthand conversion
@@ -119,3 +118,128 @@ class Browser(BasicBrowser):
                 
             else:
                 return None
+
+
+    def change_home_tab(self, handle):
+        ''' (Tab management) Change home tab to handle
+        '''
+        
+        self.home_tab = handle
+
+    def get_window_handles(self ):
+        ''' (Tab management) Return all open tabs (all windows handles) as a list
+        '''
+        
+        return self.driver.window_handles
+
+    def get_current_window_handle(self):
+        ''' (Tab management) Return current active tab (window handle)
+        '''        
+        
+        return self.driver.current_window_handle
+    
+    def openTab_JS(self, url, switch_tab=True, sleep_time=0.5):
+        ''' (Tab management) Open url as a new tab
+        '''
+        
+        if url == "":
+            url = "about:blank"
+        elif url[0:4] != 'http':
+            url = "https://:" + url
+        tab_already_open = self.get_window_handles()
+        self.driver.execute_script('''window.open("''' + url + '''","_blank");''')
+        updated_tab_list = self.get_window_handles()
+        if len(updated_tab_list) - len(tab_already_open) == 1:
+            new_tab = [x for x in updated_tab_list if x not in tab_already_open][0]
+            if switch_tab:
+                self.switchTab_JS(new_tab)
+            return new_tab
+        else:
+            raise TabOpenException
+
+    def closeTab_JS(self, handle=None, switch_back_home=True):   
+        ''' (Tab management) Close current open tab, if not swith_back_home then let chrome decide 
+        which tab to switch to.
+        '''        
+        
+        #check for potential errors with hometab being closed
+        if switch_back_home:
+            if self.home_tab not in self.get_window_handles():
+                raise NoSuchWindowException("Home tab DNE")
+            elif self.home_tab == handle:
+                raise TabCloseException("Can't switch back home when closing home: Do browser.change_home_tab() first")
+            elif handle == None and self.get_current_window_handle() == self.home_tab:
+                raise TabCloseException("Can't close current home tab and go back to it: Do browser.change_home_tab() first")
+            
+        #doing the actual closing
+        if handle:
+            if handle in self.get_window_handles():
+                self.switchTab_JS(handle)
+                self.driver.close()
+            else:
+                raise NoSuchWindowException("Tab to be close DNE")
+            
+        else:
+            self.driver.close()
+            
+        #doing the actual switching
+        if switch_back_home:
+            self.switchTab_JS(self.home_tab)
+        
+    def closeAllOtherTabs_JS(self):
+        ''' (Tab management) Close all open tabs except the current active tab in view; refine home to be the current
+        active tab if home is closed.
+        '''        
+        if self.get_current_window_handle() != self.home_tab: #If not at home, change definition of home:
+            self.change_home_tab(self.get_current_window_handle())
+        handles_to_close = [x for x in self.get_window_handles() if x != self.home_tab]
+        for handle in handles_to_close:
+            self.closeTab_JS(handle)
+            
+    def closeAllExceptHome_JS(self):
+        ''' (Tab management) Close all open tabs except the home tab.
+        '''        
+        if self.get_current_window_handle() != self.home_tab: #If not at home, go back home:
+            self.switchTab_JS(self.home_tab)
+        self.closeAllOtherTabs_JS()
+        
+        
+    def switchTab_JS(self, handle):
+        ''' (Tab management) Swich current tab view to the given handle.
+        '''        
+        self.driver.switch_to.window(handle)
+        return handle
+
+
+class TabOpenException(WebDriverException):
+    pass
+
+class TabCloseException(WebDriverException):
+    pass
+
+class TabSwitchException(WebDriverException):
+    pass
+
+
+if __name__ == '__main__':
+    # Tab management test:
+    yahoo, google,  bing= 'https://yahoo.com', 'https://google.com', 'https://bing.com'
+    browser = Browser("about:blank")
+    
+    b = browser
+    gg = b.openTab_JS(google)
+    yy = b.openTab_JS(yahoo)
+    bb = b.openTab_JS(bing)
+    b.change_home_tab(bb)
+    b.switchTab_JS(gg)
+    input("Hit Return and only Bing will remain")
+    b.closeAllExceptHome_JS()
+    
+    input("Hit Return Again to open three more tabs")
+    gg = b.openTab_JS(google)
+    yy = b.openTab_JS(yahoo)
+    bb = b.openTab_JS(bing)
+    b.change_home_tab(gg)   
+    b.switchTab_JS(yy)
+    input("Hit Return and only Yahoo will remain")
+    b.closeAllOtherTabs_JS()
